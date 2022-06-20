@@ -2,7 +2,7 @@ const express = require('express');
 const { Post, UserPost } = require('../db/models');
 const Sequelize = require('sequelize');
 const router = express.Router();
-const update=require('../api/updateController');
+const {PatchRequest}=require('../api/usePatch');
 const {in: opIn} = Sequelize.Op;
 /**
  * Create a new blog post
@@ -44,22 +44,22 @@ router.post('/', async (req, res, next) => {
 
 //Part 1: Fetching Blog Posts
 
-router.get('/api/posts', async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
-    const error = new Error("An error message");
+    const error = new Error("Author id is not correctly definded or it is null ");
     const {authorIds} = req.query;
     if(!authorIds){
       return res.status(400).send({
         message: error
      });
     }
-   const id_list = authorIds.split(',');
-    const users_post =  UserPost.findAll({
+   const idList = authorIds.split(',');
+    const usersPost =  UserPost.findAll({
       include: [
         {
           where: {
             userId: {
-              [opIn]:id_list
+              [opIn]:idList
             },
             
           },
@@ -67,8 +67,7 @@ router.get('/api/posts', async (req, res, next) => {
       ],
     });
 
-    const postIds = users_post.map(item => item.postId);
-
+    const postIds = usersPost.map(item => item.postId);
     const postList = Post.findAll({
       include: [
         {
@@ -77,8 +76,8 @@ router.get('/api/posts', async (req, res, next) => {
               [opIn]:postIds
             },
             order: [
-              ['id', 'ASC'],
-              ['popularity', 'ASC'],
+              ['id',req.query.order],
+              ['popularity', req.query.order],
           ],
           },
         },
@@ -91,7 +90,7 @@ router.get('/api/posts', async (req, res, next) => {
     next(error);
   }
 //part 2 Updating a Blog Post
-router.put(`/api/posts/${UserPost.postId}`, update);
+PatchRequest(`/api/posts/:${UserPost.postId}`,UserPost.postId);
 });
 
 
