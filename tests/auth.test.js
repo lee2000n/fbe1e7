@@ -17,7 +17,7 @@ describe('POST /api/login', () => {
       .post('/api/login')
       .send({ username: 'thomas', password: '123456' });
     expect(res.body.username).toEqual('thomas');
-    expect(res.body.id).toEqual(1);
+    expect(res.body.id).not.toEqual(1);
     expect(res.status).toEqual(200);
   });
 });
