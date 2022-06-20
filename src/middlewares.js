@@ -21,32 +21,79 @@ function errorHandler(err, req, res, next) {
 /* eslint-disable-next-line no-unused-vars */
 function auth(req, res, next) {
   const token = req.headers['x-access-token'];
-  if (token) {
+  if (!token) {
+    return res.status(401).send({
+      message: "Unauthorized! No token provided!"
+    });
+  }
+  else {
     jwt.verify(token, process.env.SESSION_SECRET, (err, decoded) => {
       if (err) {
-        return next();
-      }
-      User.findOne({
-        where: { id: decoded.id },
-      })
-        .then((user) => {
-          if (!user) {
-            throw new Error('No user found with provided token');
-          }
-          req.user = user.toJSON();
-          return next();
-        })
-        .catch(() => {
-          next();
+        return res.status(401).send({
+          message: "Unauthorized! Got invalid credentials!"
         });
+      }
+      req.userId = decoded.id;
+      next();
     });
-  } else {
-    return next();
   }
 }
+function isAdmin  (req, res, next)  {
+  User.findByPk(req.userId).then(user => {
+    user.getRoles().then(roles => {
+      for (let role of roles) {
+        if (role.name === "Admin") {
+          next();
+          return;
+        }
+      }
 
+      res.status(403).send({
+        message: "Require Admin Role!"
+      });
+      
+    });
+  });
+};
+
+function isUser  (req, res, next)  {
+  User.findByPk(req.userId).then(user => {
+    user.getRoles().then(roles => {
+      for (let role of roles) {
+        if (role.name === "User") {
+          next();
+          return;
+        }
+      }
+
+      res.status(403).send({
+        message: "Require User Role!"
+      });
+    });
+  });
+};
+
+function isGuest(req, res, next) {
+  User.findByPk(req.userId).then(user => {
+    user.getRoles().then(roles => {
+      for (let role of roles) {
+        if (role.name === "Guest") {
+          next();
+          return;
+        }
+      }
+
+      res.status(403).send({
+        message: "Require Guest Role!"
+      });
+    });
+  });
+}
 module.exports = {
   notFound,
   errorHandler,
   auth,
+  isAdmin,
+  isGuest,
+  isUser
 };
